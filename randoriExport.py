@@ -12,8 +12,8 @@ import csv
 from base64 import b64encode
 
 APItoken="";
-limit = 0  # initially we may set the limit to 0 to get the total records
-offset = 0  # initial number of records to skip.
+limit = 0;  # initially we may set the limit to 0 to get the total records
+offset = 0;  # initial number of records to skip.
 
 def getApiKey():
     api_token = os.getenv("RANDORI_API_KEY")
@@ -38,7 +38,7 @@ def getCsvData(endpoint, csvname):
         # check the server response code for success
         print("response.status_code: "+str(response.status_code))
         result = response.json()
-        print("Line80 result="+str(len(result))+" "+str(result['total']))
+        print("offset="+str(result['offset'])+" total="+str(result['total']))
     except Exception as e:    
         print("Response OR Result failed! Exception: "+e.message)
     return result   
@@ -58,9 +58,9 @@ def generateCSV(result):
         return
     # make further requests for records 10 at a time. Max value is 2000
     # Please update this value
-    offset = 0 # initial number of records to skip.
+    offset = 0  # initial number of records to skip.
     params['limit'] = 10
-    print("url="+url)
+    print("url="+url+" total_records="+str(total_records))
     all_entities = []
     while offset <= total_records:
         try:
@@ -76,8 +76,10 @@ def generateCSV(result):
                       "We got HTTP status code: {response.status_code}")
                 exit(1)
             result = response.json()
+            print("Gen: offset="+str(result['offset'])+" count="+str(result['count']))
             records = result['data']
             if result['count'] == 0:
+                params['offset'] = 0
                 break
             for record in records:
                 all_entities.append(record)
@@ -88,6 +90,7 @@ def generateCSV(result):
     # finally, write out the data to a CSV file
     with open(csvname, 'w') as csvfile:
         # Dynamically get names of columns based on dictionary keys
+        #print("entity[0]="+str(all_entities[0].values()))
         columns = all_entities[0].keys()
         writer = csv.DictWriter(csvfile, fieldnames=columns)
         writer.writeheader()
@@ -107,8 +110,8 @@ headers = {'Authorization': APItoken,
 
 RANDORI_PLATFORM_URL = "https://alpha.randori.io/"
 # Randori Recon entity types (excluding service)
-endpoints = ['recon/api/v1/ip',
-             'recon/api/v1/hostname',
+endpoints = ['recon/api/v1/hostname',
+             'recon/api/v1/ip',
              'recon/api/v1/target',
              'recon/api/v1/service',
              'recon/api/v1/network'
@@ -121,7 +124,7 @@ query = {
         {
             "field": "table.target_temptation",
             "operator": "greater_or_equal",
-            "value": 15  # medium or higher target temptation
+            "value": 25  # medium or higher target temptation
 } ]
 }
 
